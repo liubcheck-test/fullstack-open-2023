@@ -12,6 +12,36 @@ app.use(
 app.use(cors())
 app.use(express.static('build'))
 
+const mongoose = require('mongoose')
+
+if (process.argv.length < 3) {
+    console.log('Usage: node mongo.js <password> [name] [number]')
+    process.exit(1)
+}
+
+const password = process.argv[2]
+const dbName = 'phonebook'
+
+const url = 
+    `mongodb+srv://fullstack:${password}@cluster0.hs5muim.mongodb.net/${dbName}?retryWrites=true&w=majority`
+
+mongoose.connect(url)
+
+const personSchema = new mongoose.Schema({
+    name: String,
+    number: String,
+})
+
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
+})
+
+const Person = mongoose.model('Person', personSchema)
+
 let persons = [
     { 
       id: 1,
@@ -40,7 +70,9 @@ let persons = [
   })
   
   app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Person.find({}).then(persons => {
+      response.json(persons)
+    })
   })
 
   app.get('/api/persons/:id', (request, response) => {
