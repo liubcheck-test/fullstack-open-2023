@@ -11,10 +11,29 @@ mongoose.connect(url)
   .catch((error) => {
     console.log('error connecting to MongoDB:', error.message)
   })
+  
+const uniqueValidator = require('mongoose-unique-validator')
+
+const phoneRegex = '/^\d{2,3}-\d{7,}$/'
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+    name: {
+        type: String,
+        required: true,
+        unique: true, 
+        minlength: 3
+    },
+    number: { 
+        type: String, 
+        required: true, 
+        unique: true, 
+        validate: {
+            validator: function (value) {
+              return phoneRegex.test(value)
+            },
+            message: (props) => `${props.value} is not a valid phone number!`,
+          },
+    },
 })
 
 personSchema.set('toJSON', {
@@ -24,5 +43,7 @@ personSchema.set('toJSON', {
       delete returnedObject.__v
     }
 })
+
+personSchema.plugin(uniqueValidator)
 
 module.exports = mongoose.model('Person', personSchema)
