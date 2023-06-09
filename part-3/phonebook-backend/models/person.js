@@ -14,7 +14,7 @@ mongoose.connect(url)
   
 const uniqueValidator = require('mongoose-unique-validator')
 
-const phoneRegex = '/^\d{2,3}-\d{7,}$/'
+const phoneRegex = /^\d{2,3}-\d{7,}$/
 
 const personSchema = new mongoose.Schema({
     name: {
