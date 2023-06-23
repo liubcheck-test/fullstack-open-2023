@@ -12,6 +12,7 @@ let token
 
 beforeAll(async () => {
   await Blog.deleteMany({})
+  await User.deleteMany({})
 
   const passwordHash = await bcrypt.hash('test_password', 10)
   const user = new User({ username: 'test_user', passwordHash })
