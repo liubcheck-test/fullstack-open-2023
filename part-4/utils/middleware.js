@@ -24,8 +24,40 @@ const errorHandler = (error, request, response, next) => {
   next(error)
 }
 
+const tokenExtractor = (request, response, next) => {
+  const authorization = request.get('Authorization')
+  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+    request.token = authorization.substring(7)
+  } else {
+    request.token = null
+  }
+
+  next()
+}
+
+const userExtractor = (request, response, next) => {
+  // Logic to extract the user from the token and set it in the request object
+  // For example, using the same `getTokenFrom` function you already have:
+
+  const token = getTokenFrom(request)
+
+  try {
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+    if (!token || !decodedToken.id) {
+      return response.status(401).json({ error: 'token missing or invalid' })
+    }
+    const userId = decodedToken.id
+    request.user = { id: userId }
+    next()
+  } catch (exception) {
+    next(exception)
+  }
+}
+
 module.exports = {
   requestLogger,
   unknownEndpoint,
-  errorHandler
+  errorHandler,
+  tokenExtractor,
+  userExtractor
 }

@@ -2,12 +2,27 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const helper = require('./test_helper')
+const bcrypt = require('bcrypt')
 
 const api = supertest(app)
 
-beforeEach(async () => {
+let token
+
+beforeAll(async () => {
   await Blog.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('test_password', 10)
+  const user = new User({ username: 'test_user', passwordHash })
+
+  await user.save()
+
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'test_user', password: 'test_password' })
+
+  token = loginResponse.body.token
 
   for (let blog of helper.initialBlogs) {
     let blogObject = new Blog(blog)
@@ -38,6 +53,7 @@ test('creates a new blog post', async () => {
   await api
     .post('/api/blogs')
     .send(newBlog)
+    .set('Authorization', `Bearer ${token}`)
     .expect(201)
     .expect('Content-Type', /application\/json/)
 
@@ -58,6 +74,7 @@ test('creates a new blog post with default likes', async () => {
   const response = await api
     .post('/api/blogs')
     .send(newBlog)
+    .set('Authorization', `Bearer ${token}`)
     .expect(201)
     .expect('Content-Type', /application\/json/)
 
