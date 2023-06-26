@@ -17,7 +17,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "eslint": "eslint .",
-    "fix": "eslint --fix ."
+    "fix": "eslint --fix .",
+    "start:test": "NODE_ENV=test node index.js"
   },
   "eslintConfig": {
     "extends": [
@@ -40,7 +41,8 @@
   "proxy": "http://localhost:3003",
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^14.0.0",
-    "eslint-plugin-jest": "^27.2.2"
+    "@testing-library/react": "^13.4.0",
+    "cypress": "^12.15.0",
+    "eslint-plugin-jest": "^27.2.1"
   }
 }
