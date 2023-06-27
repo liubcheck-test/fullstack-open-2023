@@ -1,62 +1,53 @@
-import { createSlice } from '@reduxjs/toolkit'
-import { setNotification } from './notificationReducer'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import anecdoteService from '../services/anecdotes'
+import { showNotification } from './notificationReducer'
 
-const anecdotesAtStart = [
-  'If it hurts, do it more often',
-  'Adding manpower to a late software project makes it later!',
-  'The first 90 percent of the code accounts for the first 90 percent of the development time...The remaining 10 percent of the code accounts for the other 90 percent of the development time.',
-  'Any fool can write code that a computer can understand. Good programmers write code that humans can understand.',
-  'Premature optimization is the root of all evil.',
-  'Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.'
-]
-
-const getId = () => (100000 * Math.random()).toFixed(0)
-
-const asObject = (anecdote) => {
-  return {
-    content: anecdote,
-    id: getId(),
-    votes: 0
+export const initializeAnecdotes = createAsyncThunk(
+  'anecdotes/initialize',
+  async () => {
+    const anecdotes = await anecdoteService.getAll()
+    return anecdotes
   }
-}
+)
 
-const initialState = anecdotesAtStart.map((anecdote) => asObject(anecdote))
+export const createAnecdote = createAsyncThunk(
+  'anecdotes/create',
+  async (content, { dispatch }) => {
+    const anecdote = await anecdoteService.create(content)
+    dispatch(showNotification(`New anecdote added: ${anecdote.content}`, 5))
+    return anecdote
+  }
+)
+
+export const voteAnecdote = createAsyncThunk(
+  'anecdotes/vote',
+  async (id, { dispatch }) => {
+    const anecdote = await anecdoteService.vote(id)
+    dispatch(showNotification(`You voted for anecdote '${anecdote.content}'`, 5))
+    return anecdote
+  }
+)
 
 const anecdoteSlice = createSlice({
   name: 'anecdotes',
-  initialState,
-  reducers: {
-    vote: (state, action) => {
-      const id = action.payload
-      const anecdote = state.find(anecdote => anecdote.id === id)
-      if (anecdote) {
-        anecdote.votes += 1
-      }
-    },
-    create: {
-      reducer: (state, action) => {
+  initialState: [],
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(initializeAnecdotes.fulfilled, (state, action) => {
+        return action.payload
+      })
+      .addCase(createAnecdote.fulfilled, (state, action) => {
         state.push(action.payload)
-      },
-      prepare: (content) => {
-        return { payload: { content, id: getId(), votes: 0 } }
-      },
-    },
+      })
+      .addCase(voteAnecdote.fulfilled, (state, action) => {
+        const { id, votes } = action.payload
+        const anecdote = state.find((anecdote) => anecdote.id === id)
+        if (anecdote) {
+          anecdote.votes = votes
+        }
+      })
   },
 })
-
-export const createAnecdote = (content) => {
-  return async (dispatch) => {
-    dispatch(anecdoteSlice.actions.create(content))
-    dispatch(setNotification(`New anecdote: "${content}"`, 5))
-  }
-}
-
-export const voteAnecdote = (id) => {
-  return async (dispatch, getState) => {
-    const anecdote = getState().anecdotes.find((a) => a.id === id)
-    dispatch(anecdoteSlice.actions.vote(id))
-    dispatch(setNotification(`You voted for: "${anecdote.content}"`, 5))
-  }
-}
 
 export default anecdoteSlice.reducer
