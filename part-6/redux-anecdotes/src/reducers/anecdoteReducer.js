@@ -1,3 +1,6 @@
+import { createSlice } from '@reduxjs/toolkit'
+import { setNotification } from './notificationReducer'
+
 const anecdotesAtStart = [
   'If it hurts, do it more often',
   'Adding manpower to a late software project makes it later!',
@@ -19,36 +22,41 @@ const asObject = (anecdote) => {
 
 const initialState = anecdotesAtStart.map((anecdote) => asObject(anecdote))
 
-const anecdoteReducer = (state = initialState, action) => {
-  switch (action.type) {
-    case 'CREATE':
-      return [...state, action.data]
-    case 'VOTE':
-      const id = action.data.id
-      return state.map((anecdote) =>
-        anecdote.id !== id ? anecdote : { ...anecdote, votes: anecdote.votes + 1 }
-      )
-    default:
-      return state
+const anecdoteSlice = createSlice({
+  name: 'anecdotes',
+  initialState,
+  reducers: {
+    vote: (state, action) => {
+      const id = action.payload
+      const anecdote = state.find(anecdote => anecdote.id === id)
+      if (anecdote) {
+        anecdote.votes += 1
+      }
+    },
+    create: {
+      reducer: (state, action) => {
+        state.push(action.payload)
+      },
+      prepare: (content) => {
+        return { payload: { content, id: getId(), votes: 0 } }
+      },
+    },
+  },
+})
+
+export const createAnecdote = (content) => {
+  return async (dispatch) => {
+    dispatch(anecdoteSlice.actions.create(content))
+    dispatch(setNotification(`New anecdote: "${content}"`, 5))
   }
 }
 
 export const voteAnecdote = (id) => {
-  return {
-    type: 'VOTE',
-    data: { id },
+  return async (dispatch, getState) => {
+    const anecdote = getState().anecdotes.find((a) => a.id === id)
+    dispatch(anecdoteSlice.actions.vote(id))
+    dispatch(setNotification(`You voted for: "${anecdote.content}"`, 5))
   }
 }
 
-export const createAnecdote = (content) => {
-  return {
-    type: 'CREATE',
-    data: {
-      content,
-      id: getId(),
-      votes: 0,
-    },
-  }
-}
-
-export default anecdoteReducer
+export default anecdoteSlice.reducer
